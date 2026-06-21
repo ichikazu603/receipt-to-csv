@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>レシートCSV変換ツール — 操作ガイド</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#FFF8F3;
+  --surface:#FFFFFF;
+  --ink:#1E1A17;
+  --ink-2:#7A6F66;
+  --orange:#D95F2A;
+  --orange-light:#FFF0E8;
+  --green:#2A7A55;
+  --green-light:#E6F5ED;
+  --border:#EDE5DC;
+  font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;
+}
+
+body{background:var(--bg);color:var(--ink);line-height:1.7;max-width:480px;margin:0 auto}
+
+/* Header */
+header{
+  background:var(--orange);
+  padding:20px 24px;
+  display:flex;align-items:center;gap:12px;
+}
+header .icon{font-size:2rem;line-height:1}
+header h1{font-size:1.05rem;font-weight:800;color:#fff}
+header p{font-size:.72rem;color:rgba(255,255,255,.75);margin-top:2px}
+
+/* Hero */
+.hero{
+  background:var(--surface);
+  border-bottom:1.5px solid var(--border);
+  padding:28px 24px 24px;
+  text-align:center;
+}
+.hero h2{font-size:1.25rem;font-weight:900;line-height:1.4;margin-bottom:10px}
+.hero p{font-size:.85rem;color:var(--ink-2);margin-bottom:20px}
+.url-box{
+  background:var(--orange-light);
+  border:2px dashed var(--orange);
+  border-radius:12px;
+  padding:16px;
+}
+.url-box .url-label{font-size:.68rem;font-weight:800;color:var(--orange);letter-spacing:.06em;margin-bottom:8px}
+.url-link{
+  display:block;
+  background:var(--orange);color:#fff;
+  font-size:1rem;font-weight:800;
+  padding:14px 20px;border-radius:10px;
+  text-decoration:none;
+  letter-spacing:.02em;
+  box-shadow:0 4px 14px rgba(217,95,42,.3);
+}
+.url-hint{font-size:.7rem;color:var(--ink-2);margin-top:10px}
+
+/* Section title */
+.section{padding:28px 20px 0}
+.section-title{
+  display:flex;align-items:center;gap:10px;
+  font-size:1rem;font-weight:900;margin-bottom:20px;
+}
+.section-title .dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--orange);flex-shrink:0;
+}
+
+/* Step card */
+.step{
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:16px;
+  padding:20px;
+  margin-bottom:12px;
+  position:relative;
+}
+.step-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px}
+.step-num{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--orange);color:#fff;
+  font-size:.85rem;font-weight:900;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:2px;
+}
+.step-num.green{background:var(--green)}
+.step-title{font-size:1rem;font-weight:800;line-height:1.3}
+.step-sub{font-size:.8rem;color:var(--ink-2);margin-top:3px}
+
+/* Screen preview */
+.screen{
+  background:#F4F4F4;
+  border:1.5px solid #D8D8D8;
+  border-radius:10px;
+  padding:12px 14px;
+  font-size:.78rem;
+  color:#333;
+}
+.screen-bar{
+  background:#2A5C45;color:#fff;
+  font-size:.65rem;font-weight:700;
+  padding:5px 10px;border-radius:6px 6px 0 0;
+  margin:-12px -14px 10px;letter-spacing:.03em;
+}
+.btn-preview{
+  display:block;width:100%;
+  padding:10px;border-radius:8px;
+  font-size:.8rem;font-weight:800;text-align:center;margin:8px 0 0;
+}
+.btn-orange{background:#D95F2A;color:#fff}
+.btn-green{background:#2A7A55;color:#fff}
+.btn-outline{background:#fff;color:#333;border:1.5px solid #CCC}
+.upload-box{
+  border:2px dashed #AAA;border-radius:8px;
+  padding:14px;text-align:center;color:#888;font-size:.75rem;
+  margin-bottom:0;
+}
+.table-preview{width:100%;border-collapse:collapse;font-size:.68rem;margin-top:4px}
+.table-preview th{background:#E6F5ED;color:#2A7A55;font-weight:800;padding:5px 8px;text-align:left;border-bottom:1px solid #C5E8D5}
+.table-preview td{padding:5px 8px;border-bottom:1px solid #F0F0F0;color:#333}
+
+/* Tip */
+.tip{
+  background:var(--orange-light);
+  border-left:4px solid var(--orange);
+  border-radius:0 10px 10px 0;
+  padding:12px 14px;
+  font-size:.8rem;
+  color:var(--ink);
+  margin-bottom:10px;
+}
+.tip strong{display:block;margin-bottom:4px;color:var(--orange);font-size:.75rem;font-weight:800;letter-spacing:.04em}
+
+/* Yayoi steps */
+.yayoi-step{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:14px 0;border-bottom:1px solid var(--border);
+}
+.yayoi-step:last-child{border-bottom:none}
+.y-num{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--green-light);color:var(--green);
+  font-size:.75rem;font-weight:900;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:2px;
+}
+.yayoi-step h4{font-size:.9rem;font-weight:800;margin-bottom:3px}
+.yayoi-step p{font-size:.78rem;color:var(--ink-2)}
+.menu-path{
+  display:inline-block;
+  background:var(--green-light);color:var(--green);
+  font-size:.7rem;font-weight:800;
+  padding:3px 8px;border-radius:5px;margin-top:4px;
+}
+
+/* Contact */
+.contact{
+  margin:24px 20px 0;
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:16px;
+  padding:20px;
+  text-align:center;
+}
+.contact h3{font-size:.95rem;font-weight:800;margin-bottom:6px}
+.contact p{font-size:.82rem;color:var(--ink-2);margin-bottom:14px}
+.contact-btn{
+  display:inline-block;
+  background:var(--ink);color:#fff;
+  font-size:.85rem;font-weight:800;
+  padding:12px 24px;border-radius:10px;
+  text-decoration:none;
+}
+
+footer{
+  padding:28px 20px;
+  text-align:center;
+  font-size:.72rem;
+  color:var(--ink-2);
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="icon">🧾</div>
+  <div>
+    <h1>レシートCSV変換ツール</h1>
+    <p>高橋さん専用 操作ガイド</p>
+  </div>
+</header>
+
+<!-- Hero: URL -->
+<div class="hero">
+  <h2>写真を撮るだけで<br>経費登録が終わります</h2>
+  <p>下のボタンからツールを開いてください</p>
+  <div class="url-box">
+    <div class="url-label">▼ ここをタップ</div>
+    <a href="【ここにStreamlit CloudのURLを貼る】" class="url-link">
+      🧾 ツールを開く
+    </a>
+    <p class="url-hint">※ スマホのブラウザで開いてください</p>
+  </div>
+</div>
+
+<!-- Part 1: レシート取り込み -->
+<div class="section">
+  <div class="section-title"><div class="dot"></div>レシートを取り込む</div>
+
+  <!-- Step 1 -->
+  <div class="step">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">「写真を追加」ボタンを押す</div>
+        <div class="step-sub">ツールを開いたらこの画面が表示されます</div>
+      </div>
+    </div>
+    <div class="screen">
+      <div class="screen-bar">🧾 レシートCSV変換ツール</div>
+      <div class="upload-box">
+        📁 レシート画像を選択<br>
+        <span style="font-size:.7rem">JPG / PNG 対応 · 複数枚OK</span>
+      </div>
+      <div class="btn-outline btn-preview" style="margin-top:8px">Browse files</div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">レシートを撮影 or ライブラリから選ぶ</div>
+        <div class="step-sub">複数枚まとめて選んでもOKです</div>
+      </div>
+    </div>
+    <div class="tip">
+      <strong>📸 きれいに撮るコツ</strong>
+      ・明るい場所で撮る<br>
+      ・レシートを平らに広げる<br>
+      ・レシート全体が画面に入るようにする
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step">
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">「OCR解析を実行」を押す</div>
+        <div class="step-sub">AIが自動で日付・金額・店名を読み取ります</div>
+      </div>
+    </div>
+    <div class="screen">
+      <div class="screen-bar">🧾 レシートCSV変換ツール</div>
+      <div style="font-size:.72rem;color:#555;margin-bottom:8px">📎 LAWSON渋谷.jpg（1枚選択済み）</div>
+      <div class="btn-orange btn-preview">OCR解析を実行</div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step">
+    <div class="step-head">
+      <div class="step-num">4</div>
+      <div>
+        <div class="step-title">内容を確認する</div>
+        <div class="step-sub">間違いがあればその場で修正できます</div>
+      </div>
+    </div>
+    <div class="screen">
+      <div class="screen-bar">✅ 解析結果（直接編集できます）</div>
+      <table class="table-preview">
+        <tr><th>日付</th><th>金額</th><th>店名</th></tr>
+        <tr><td>2024/06/15</td><td>334</td><td>LAWSON 渋谷</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="step">
+    <div class="step-head">
+      <div class="step-num">5</div>
+      <div>
+        <div class="step-title">「CSVをダウンロード」を押す</div>
+        <div class="step-sub">ファイルがスマホに保存されます</div>
+      </div>
+    </div>
+    <div class="screen">
+      <div class="screen-bar">🧾 レシートCSV変換ツール</div>
+      <div class="btn-green btn-preview">📥 CSVをダウンロード（弥生会計 Next 用）</div>
+    </div>
+  </div>
+</div>
+
+<!-- Part 2: 弥生に取り込む -->
+<div class="section" style="padding-bottom:8px">
+  <div class="section-title"><div class="dot" style="background:var(--green)"></div>弥生会計 Next に取り込む</div>
+
+  <div class="step" style="border-color:var(--green-light)">
+    <div class="yayoi-step">
+      <div class="y-num">①</div>
+      <div>
+        <h4>弥生会計 Next を開く</h4>
+        <p>スマホアプリまたはブラウザで弥生を開いてください</p>
+      </div>
+    </div>
+    <div class="yayoi-step">
+      <div class="y-num">②</div>
+      <div>
+        <h4>仕訳メニューを開く</h4>
+        <span class="menu-path">取引・仕訳 → 仕訳の取込</span>
+      </div>
+    </div>
+    <div class="yayoi-step">
+      <div class="y-num">③</div>
+      <div>
+        <h4>ダウンロードしたCSVを選ぶ</h4>
+        <p>「receipts_yayoi.csv」というファイルを選択して取り込んでください</p>
+      </div>
+    </div>
+    <div class="yayoi-step">
+      <div class="y-num">④</div>
+      <div>
+        <h4>内容を確認して完了</h4>
+        <p>仕訳が自動で登録されます 🎉</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Contact -->
+<div class="contact">
+  <h3>困ったときはご連絡ください</h3>
+  <p>うまく読み取れない・エラーが出た場合は<br>お気軽にどうぞ</p>
+  <a href="mailto:【メールアドレス】" class="contact-btn">📩 メッセージを送る</a>
+</div>
+
+<footer>
+  レシートCSV変換ツール — 高橋さん専用<br>
+  わからないことはいつでも聞いてください
+</footer>
+
+</body>
+</html>

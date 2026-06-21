@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>レシートCSV変換ツール</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#F3F6EF;
+  --surface:#FFFFFF;
+  --ink:#181E14;
+  --ink-2:#606B58;
+  --green:#2A5C45;
+  --green-mid:#52A878;
+  --green-light:#D6EFE0;
+  --receipt:#FFFEF4;
+  --receipt-rule:#D8D0B0;
+  --yellow:#F5C842;
+  --red:#E05252;
+  --red-light:#FFF0EF;
+  font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;
+}
+
+body{background:var(--bg);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased}
+
+/* ── Header ── */
+header{
+  background:var(--green);
+  padding:20px 28px;
+  display:flex;align-items:center;gap:14px;
+}
+header .mark{font-size:2rem;line-height:1}
+header h1{font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:.02em}
+header p{font-size:.75rem;color:rgba(255,255,255,.65);margin-top:2px}
+
+/* ── Hero ── */
+.hero{
+  padding:64px 24px 56px;
+  text-align:center;
+}
+.badge{
+  display:inline-block;
+  background:var(--yellow);color:var(--ink);
+  font-size:.7rem;font-weight:800;letter-spacing:.06em;
+  padding:4px 14px;border-radius:100px;margin-bottom:18px;
+}
+.hero h2{
+  font-size:clamp(1.55rem,5vw,2.4rem);
+  font-weight:900;line-height:1.25;margin-bottom:14px;
+}
+.hero h2 em{font-style:normal;color:var(--green-mid)}
+.hero .sub{
+  font-size:.95rem;color:var(--ink-2);
+  max-width:400px;margin:0 auto 52px;
+}
+
+/* ── Transform ── */
+.transform{
+  display:flex;align-items:center;justify-content:center;
+  gap:28px;flex-wrap:wrap;
+}
+
+/* Receipt */
+.receipt-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+.receipt{
+  width:210px;
+  background:var(--receipt);
+  border:1.5px solid var(--receipt-rule);
+  border-radius:3px 3px 0 0;
+  box-shadow:3px 6px 24px rgba(0,0,0,.10);
+  font-family:'Courier New','Osaka-Mono',monospace;
+  font-size:.75rem;line-height:1.9;
+  overflow:hidden;
+}
+.receipt-body{padding:18px 16px 12px}
+.r-store{
+  font-size:.85rem;font-weight:700;text-align:center;
+  padding-bottom:8px;margin-bottom:8px;
+  border-bottom:1px dashed var(--receipt-rule);
+}
+.r-row{display:flex;justify-content:space-between;color:#444}
+.r-row.tax{font-size:.68rem;color:#888}
+.r-row.total{
+  margin-top:8px;padding-top:8px;
+  border-top:1px dashed var(--receipt-rule);
+  font-weight:700;font-size:.85rem;
+}
+.r-date{margin-top:8px;font-size:.65rem;text-align:center;color:#aaa}
+/* Perforated tear */
+.receipt-tear{
+  width:210px;height:14px;
+  background:
+    radial-gradient(circle at 10px 0,transparent 7px,var(--receipt) 7.5px),
+    radial-gradient(circle at 0 0,transparent 7px,var(--receipt) 7.5px);
+  background-size:20px 100%;
+  background-repeat:repeat-x;
+  background-color:transparent;
+  border-left:1.5px solid var(--receipt-rule);
+  border-right:1.5px solid var(--receipt-rule);
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.07));
+}
+.receipt-caption{font-size:.72rem;color:var(--ink-2);font-weight:600}
+
+/* Arrow */
+.arrow{display:flex;flex-direction:column;align-items:center;gap:8px}
+.arrow-shaft{
+  display:flex;align-items:center;gap:0;
+}
+.shaft-line{width:50px;height:3px;background:var(--green-mid);border-radius:2px}
+.shaft-tip{
+  width:0;height:0;
+  border-top:7px solid transparent;
+  border-bottom:7px solid transparent;
+  border-left:10px solid var(--green-mid);
+}
+.arrow-tag{
+  font-size:.68rem;font-weight:800;letter-spacing:.04em;
+  color:var(--green);background:var(--green-light);
+  padding:4px 10px;border-radius:100px;white-space:nowrap;
+}
+
+/* CSV card */
+.csv-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+.csv-card{
+  width:300px;
+  background:var(--surface);
+  border:2px solid var(--green-mid);
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:3px 6px 24px rgba(42,92,69,.13);
+}
+.csv-titlebar{
+  background:var(--green);color:#fff;
+  padding:8px 14px;font-size:.7rem;font-weight:700;
+  display:flex;align-items:center;gap:6px;letter-spacing:.03em;
+}
+table.tbl{width:100%;border-collapse:collapse;font-size:.7rem}
+table.tbl th{
+  background:var(--green-light);color:var(--green);
+  font-weight:800;padding:7px 10px;text-align:left;
+  border-bottom:1.5px solid #BFE3CF;white-space:nowrap;
+}
+table.tbl td{
+  padding:8px 10px;border-bottom:1px solid #EEF5EE;color:var(--ink);
+}
+table.tbl tr:last-child td{border-bottom:none}
+.chip{
+  display:inline-block;
+  background:var(--green-light);color:var(--green);
+  font-size:.62rem;font-weight:800;
+  padding:2px 7px;border-radius:5px;
+}
+.csv-caption{font-size:.72rem;color:var(--ink-2);font-weight:600}
+
+/* ── Steps ── */
+.steps-section{max-width:780px;margin:0 auto;padding:64px 24px}
+.section-head{
+  font-size:1.35rem;font-weight:900;text-align:center;margin-bottom:40px;
+}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.step{
+  background:var(--surface);border-radius:14px;
+  padding:32px 20px 24px;text-align:center;
+  box-shadow:0 2px 14px rgba(0,0,0,.06);position:relative;
+}
+.step-n{
+  position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+  width:28px;height:28px;border-radius:50%;
+  background:var(--green);color:#fff;
+  font-size:.75rem;font-weight:900;
+  display:flex;align-items:center;justify-content:center;
+}
+.step-icon{font-size:2.4rem;margin-bottom:12px;display:block}
+.step h3{font-size:1rem;font-weight:800;margin-bottom:8px}
+.step p{font-size:.83rem;color:var(--ink-2);line-height:1.65}
+
+/* ── Compare ── */
+.compare-section{background:#1C2318;padding:64px 24px}
+.compare-section .section-head{color:#fff}
+.compare-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  max-width:660px;margin:0 auto;
+}
+.cmp{border-radius:12px;padding:28px 22px}
+.cmp.before{background:var(--red-light);border:1.5px solid #FFC8C8}
+.cmp.after{background:var(--green-light);border:1.5px solid #93D9B0}
+.cmp-label{font-size:.65rem;font-weight:800;letter-spacing:.08em;margin-bottom:10px}
+.cmp.before .cmp-label{color:var(--red)}
+.cmp.after .cmp-label{color:var(--green)}
+.cmp h3{font-size:.95rem;font-weight:800;margin-bottom:14px;color:var(--ink)}
+.cmp ul{list-style:none;font-size:.82rem;color:var(--ink-2)}
+.cmp ul li{display:flex;align-items:flex-start;gap:7px;padding:3px 0}
+.cmp ul li::before{flex-shrink:0;margin-top:.1em}
+.cmp.before ul li::before{content:'✕';color:var(--red)}
+.cmp.after ul li::before{content:'✓';color:var(--green)}
+
+/* ── Start ── */
+.start-section{padding:64px 24px;text-align:center}
+.start-section h2{font-size:1.3rem;font-weight:900;margin-bottom:10px}
+.start-section p{font-size:.88rem;color:var(--ink-2);max-width:420px;margin:0 auto 28px}
+.code-block{
+  display:inline-block;
+  background:var(--ink);color:#B5F0C8;
+  font-family:'Courier New',monospace;font-size:.85rem;
+  padding:16px 24px;border-radius:10px;text-align:left;
+  line-height:1.9;box-shadow:0 4px 20px rgba(0,0,0,.12);
+}
+.code-block .cmt{color:#5A7C60}
+
+/* ── Footer ── */
+footer{
+  background:var(--green);color:rgba(255,255,255,.65);
+  padding:22px 24px;text-align:center;font-size:.78rem;
+}
+footer strong{color:#fff}
+
+/* ── Mobile ── */
+@media(max-width:600px){
+  .transform{flex-direction:column}
+  .arrow{flex-direction:row}
+  .arrow-shaft{flex-direction:column}
+  .shaft-line{width:3px;height:36px}
+  .shaft-tip{
+    border-left:7px solid transparent;border-right:7px solid transparent;
+    border-top:10px solid var(--green-mid);border-bottom:none;
+  }
+  .csv-card{width:100%;max-width:300px}
+  .compare-grid{grid-template-columns:1fr}
+  .code-block{font-size:.78rem;padding:14px 18px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark">🧾</div>
+  <div>
+    <h1>レシートCSV変換ツール</h1>
+    <p>弥生会計 Next 仕訳インポート対応</p>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="badge">高橋さん専用ツール</div>
+  <h2>写真を撮るだけで<br><em>弥生に取り込めます</em></h2>
+  <p class="sub">手入力はもう不要。スマホで撮ったレシートが、そのまま仕訳データになります。</p>
+
+  <div class="transform">
+
+    <!-- 📄 Receipt -->
+    <div class="receipt-wrap">
+      <div class="receipt">
+        <div class="receipt-body">
+          <div class="r-store">LAWSON 渋谷店</div>
+          <div class="r-row"><span>おにぎり 鮭</span><span>¥148</span></div>
+          <div class="r-row"><span>お茶 500ml</span><span>¥156</span></div>
+          <div class="r-row tax"><span>消費税(10%)</span><span>¥30</span></div>
+          <div class="r-row total"><span>合　計</span><span>¥334</span></div>
+          <div class="r-date">2024/06/15　13:42</div>
+        </div>
+      </div>
+      <div class="receipt-tear"></div>
+      <span class="receipt-caption">📱 スマホで撮影</span>
+    </div>
+
+    <!-- → Arrow -->
+    <div class="arrow">
+      <div class="arrow-shaft">
+        <div class="shaft-line"></div>
+        <div class="shaft-tip"></div>
+      </div>
+      <span class="arrow-tag">AIが自動で読み取り</span>
+    </div>
+
+    <!-- 📊 CSV -->
+    <div class="csv-wrap">
+      <div class="csv-card">
+        <div class="csv-titlebar">📄 弥生会計 Next 用 CSV</div>
+        <table class="tbl">
+          <tr>
+            <th>取引日付</th>
+            <th>借方科目</th>
+            <th>金額</th>
+            <th>摘要</th>
+          </tr>
+          <tr>
+            <td>2024/06/15</td>
+            <td><span class="chip">会議費</span></td>
+            <td>¥334</td>
+            <td>LAWSON 渋谷</td>
+          </tr>
+        </table>
+      </div>
+      <span class="csv-caption">📥 ダウンロードして取り込む</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- Steps -->
+<section class="steps-section">
+  <h2 class="section-head">使い方 — たった3ステップ</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-n">1</div>
+      <span class="step-icon">📱</span>
+      <h3>レシートを撮影</h3>
+      <p>スマホのカメラでレシートをまとめて撮影します。ピントが合えばOKです。</p>
+    </div>
+    <div class="step">
+      <div class="step-n">2</div>
+      <span class="step-icon">🤖</span>
+      <h3>アップロード＆自動解析</h3>
+      <p>ツールを開いて写真をドロップ。AIが日付・金額・店名・科目を自動で読み取ります。</p>
+    </div>
+    <div class="step">
+      <div class="step-n">3</div>
+      <span class="step-icon">📥</span>
+      <h3>CSVをダウンロード</h3>
+      <p>「CSVをダウンロード」を押すだけ。弥生会計 Next にそのまま取り込んで完了です。</p>
+    </div>
+  </div>
+</section>
+
+<!-- Before / After -->
+<section class="compare-section">
+  <h2 class="section-head">今まで　vs　このツール</h2>
+  <div class="compare-grid">
+    <div class="cmp before">
+      <div class="cmp-label">今まで</div>
+      <h3>手入力で経費登録</h3>
+      <ul>
+        <li>レシートを見ながら1件ずつ入力</li>
+        <li>日付・金額を打ち間違える</li>
+        <li>まとめてやると時間がかかる</li>
+        <li>入力漏れが発生しやすい</li>
+      </ul>
+    </div>
+    <div class="cmp after">
+      <div class="cmp-label">このツール</div>
+      <h3>写真を撮るだけ</h3>
+      <ul>
+        <li>スマホで撮影するだけでOK</li>
+        <li>AIが自動で項目を読み取る</li>
+        <li>複数枚をまとめて一括処理</li>
+        <li>弥生にそのまま取り込める</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Start -->
+<section class="start-section">
+  <h2>ツールの起動方法</h2>
+  <p>以下のコマンドをターミナルに貼り付けて実行してください。ブラウザが自動で開きます。</p>
+  <div class="code-block">
+    <span class="cmt"># 初回のみ（依存パッケージのインストール）</span><br>
+    pip install -r requirements.txt<br><br>
+    <span class="cmt"># ツールを起動する</span><br>
+    streamlit run app.py
+  </div>
+</section>
+
+<footer>
+  <strong>レシートCSV変換ツール</strong> — 弥生会計 Next 仕訳インポート対応<br>
+  ご不明な点はお気軽にご連絡ください
+</footer>
+
+</body>
+</html>
